@@ -68,4 +68,55 @@ router.get('/:chatId', authMiddleware, async (req, res) => {
     }
 });
 
+// POST /api/messages/mark-read
+// Đánh dấu tất cả tin nhắn chưa đọc trong phòng chat là đã đọc bởi user
+router.post('/mark-read', authMiddleware, async (req, res) => {
+    try {
+        const { chatId, isGroup } = req.body;
+        const currentUserId = req.user.id;
+
+        if (!chatId || isGroup === undefined) {
+            return res.status(400).json({ success: false, msg: 'Thiếu chatId hoặc isGroup' });
+        }
+
+        const query = {};
+
+        if (isGroup === true) {
+            query.chatRoom = chatId;
+            query.isGroup = true;
+        } else {
+            query.$or = [
+                { sender: currentUserId, receiver: chatId },
+                { sender: chatId, receiver: currentUserId }
+            ];
+            query.isGroup = false;
+        }
+
+        // Tìm tất cả tin nhắn chưa được currentUser đọc
+        const unreadMessages = await Message.find({
+            ...query,
+            readBy: { $nin: [currentUserId] } // chưa có user này trong readBy
+        });
+
+        if (unreadMessages.length === 0) {
+            return res.json({ success: true, msg: 'Không có tin nhắn chưa đọc' });
+        }
+
+        // Đánh dấu đã đọc
+        await Message.updateMany(
+            { _id: { $in: unreadMessages.map(m => m._id) } },
+            { $addToSet: { readBy: currentUserId } }
+        );
+
+        res.json({
+            success: true,
+            msg: `Đã đánh dấu ${unreadMessages.length} tin nhắn là đã đọc`,
+            count: unreadMessages.length
+        });
+    } catch (err) {
+        console.error('Error marking messages as read:', err);
+        res.status(500).json({ success: false, msg: 'Server error' });
+    }
+});
+
 export default router;
