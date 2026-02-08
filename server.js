@@ -26,6 +26,9 @@ app.get('/', (req, res) => res.json({ message: 'Chat backend running:' }));
 import authRoutes from './routes/authRoutes.js';
 app.use('/api/auth', authRoutes);
 
+import userRoutes from './routes/userRoutes.js';
+app.use('/api/users', userRoutes);
+
 // Socket logic
 import setupChatSocket from './sockets/chatSocket.js';
 setupChatSocket(io);
