@@ -29,6 +29,9 @@ app.use('/api/auth', authRoutes);
 import userRoutes from './routes/userRoutes.js';
 app.use('/api/users', userRoutes);
 
+import messageRoutes from './routes/messageRoutes.js';
+app.use('/api/messages', messageRoutes);
+
 // Socket logic
 import setupChatSocket from './sockets/chatSocket.js';
 setupChatSocket(io);
